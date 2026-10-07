@@ -4,6 +4,9 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "functions": {
+    "api/analyze.ts": {
+      "maxDuration": 90
+    },
     "api/[...path].ts": {
       "maxDuration": 90
     }

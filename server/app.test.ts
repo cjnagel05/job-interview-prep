@@ -4,6 +4,7 @@ import { once } from 'node:events'
 import { createApp } from './app.js'
 import { AnalysisError, retryGeminiRequest } from './gemini.js'
 import { createInterviewAnalysisCache } from './analysis-cache.js'
+import { createAnalyzeHandler, POST } from '../api/analyze.js'
 import { interviewPrepSchema, jobDescriptionInputSchema, type InterviewPrepAnalysis } from '../src/lib/interview-prep-schema.js'
 
 const validJobDescription = `Product Manager role on our software product team. You will lead roadmap planning,
@@ -30,6 +31,65 @@ const validResult: InterviewPrepAnalysis = {
     { type: 'role-specific', question: 'How would you turn customer needs into product requirements?', basedOn: 'Define product requirements and prioritize customer needs.', skills: ['Product management'], whyItMatters: 'The role translates customer needs into plans.' },
   ],
 }
+
+test('Vercel POST handler validates JSON and returns cached interview analysis', async () => {
+  let calls = 0
+  const handler = createAnalyzeHandler(async () => {
+    calls += 1
+    return validResult
+  })
+  const post = (body: string) => handler(new Request('https://example.test/api/analyze', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body,
+  }))
+
+  const malformed = await POST(new Request('https://example.test/api/analyze', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: '{bad json',
+  }))
+  assert.equal(malformed.status, 400)
+  assert.equal((await malformed.json()).category, 'invalid_input')
+
+  const invalid = await post(JSON.stringify({ jobDescription: '' }))
+  assert.equal(invalid.status, 400)
+  assert.equal((await invalid.json()).category, 'invalid_input')
+
+  const response = await post(JSON.stringify({ jobDescription: validJobDescription }))
+  assert.equal(response.status, 200)
+  assert.deepEqual(await response.json(), validResult)
+  const duplicate = await post(JSON.stringify({ jobDescription: ` ${validJobDescription.replace(/\s+/g, '  ')} ` }))
+  assert.equal(duplicate.status, 200)
+  assert.deepEqual(await duplicate.json(), validResult)
+  assert.equal(calls, 1)
+})
+
+test('Vercel POST handler maps Gemini errors to safe JSON status categories', async () => {
+  const makeRequest = () => new Request('https://example.test/api/analyze', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ jobDescription: validJobDescription }),
+  })
+  const rateLimitHandler = createAnalyzeHandler(async () => {
+    throw new AnalysisError(429, 'rate_limit', 'Rate limited safely.')
+  })
+  const rateLimit = await rateLimitHandler(makeRequest())
+  assert.equal(rateLimit.status, 429)
+  assert.equal((await rateLimit.json()).category, 'rate_limit')
+
+  const temporaryHandler = createAnalyzeHandler(async () => {
+    throw new AnalysisError(502, 'temporary_service_issue', 'Temporary failure safely.')
+  })
+  const temporary = await temporaryHandler(makeRequest())
+  assert.equal(temporary.status, 503)
+  assert.equal((await temporary.json()).category, 'temporary_service_issue')
+
+  const unexpectedHandler = createAnalyzeHandler(async () => { throw new Error('private details') })
+  const unexpected = await unexpectedHandler(makeRequest())
+  assert.equal(unexpected.status, 500)
+  assert.equal((await unexpected.json()).category, 'temporary_service_issue')
+})
 
 test('endpoint validates input before calling the model and returns safe errors', async () => {
   let calls = 0
