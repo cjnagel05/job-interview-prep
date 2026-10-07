@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.server.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "rewriteRelativeImportExtensions": true,
+    "rootDir": ".",
+    "outDir": "server-dist"
+  },
+  "include": ["server/production.ts"],
+  "exclude": ["server/*.test.ts", "server/live-check.ts"]
+}
