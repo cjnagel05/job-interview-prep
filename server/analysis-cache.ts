@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import type { InterviewPrepAnalysis } from '../src/lib/interview-prep-schema.ts'
+import type { InterviewPrepAnalysis } from '../src/lib/interview-prep-schema.js'
 
 export type AnalysisRunner = (jobDescription: string) => Promise<InterviewPrepAnalysis>
 

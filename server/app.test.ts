@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { once } from 'node:events'
-import { createApp } from './app.ts'
-import { AnalysisError, retryGeminiRequest } from './gemini.ts'
-import { createInterviewAnalysisCache } from './analysis-cache.ts'
-import { interviewPrepSchema, jobDescriptionInputSchema, type InterviewPrepAnalysis } from '../src/lib/interview-prep-schema.ts'
+import { createApp } from './app.js'
+import { AnalysisError, retryGeminiRequest } from './gemini.js'
+import { createInterviewAnalysisCache } from './analysis-cache.js'
+import { interviewPrepSchema, jobDescriptionInputSchema, type InterviewPrepAnalysis } from '../src/lib/interview-prep-schema.js'
 
 const validJobDescription = `Product Manager role on our software product team. You will lead roadmap planning,
 collaborate with design and engineering, prioritize customer needs, define product requirements,

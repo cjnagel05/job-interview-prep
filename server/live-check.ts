@@ -1,4 +1,4 @@
-import { interviewPrepSchema } from '../src/lib/interview-prep-schema.ts'
+import { interviewPrepSchema } from '../src/lib/interview-prep-schema.js'
 
 // Explicit opt-in integration check: sends only these fictional postings to Gemini.
 // Run after npm run dev. This makes two real API requests and may use API credits.

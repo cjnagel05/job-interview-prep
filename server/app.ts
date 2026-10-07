@@ -1,8 +1,8 @@
 import express, { type ErrorRequestHandler } from 'express'
 import path from 'node:path'
-import { interviewPrepSchema, jobDescriptionInputSchema, type AnalysisErrorCategory, type InterviewPrepAnalysis } from '../src/lib/interview-prep-schema.ts'
-import { AnalysisError, analyzeJobDescription, type GeminiRetryListener } from './gemini.ts'
-import { createInterviewAnalysisCache } from './analysis-cache.ts'
+import { interviewPrepSchema, jobDescriptionInputSchema, type AnalysisErrorCategory, type InterviewPrepAnalysis } from '../src/lib/interview-prep-schema.js'
+import { AnalysisError, analyzeJobDescription, type GeminiRetryListener } from './gemini.js'
+import { createInterviewAnalysisCache } from './analysis-cache.js'
 
 // The optional analyzer lets tests exercise the endpoint without spending API credits.
 type Analyzer = (jobDescription: string, onRetry?: GeminiRetryListener) => Promise<InterviewPrepAnalysis>

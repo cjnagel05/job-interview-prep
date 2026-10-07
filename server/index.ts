@@ -1,6 +1,6 @@
 import path from 'node:path'
 import dotenv from 'dotenv'
-import { createApp } from './app.ts'
+import { createApp } from './app.js'
 
 // npm runs from the project root. The host environment takes precedence over .env.
 dotenv.config({ path: path.resolve('.env'), quiet: true })

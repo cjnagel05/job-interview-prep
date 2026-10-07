@@ -1,7 +1,7 @@
 import { GoogleGenAI } from '@google/genai'
 import { z } from 'zod'
-import { interviewPrepSchema, type AnalysisErrorCategory, type InterviewPrepAnalysis } from '../src/lib/interview-prep-schema.ts'
-import { interviewPrepPrompt } from './prompt.ts'
+import { interviewPrepSchema, type AnalysisErrorCategory, type InterviewPrepAnalysis } from '../src/lib/interview-prep-schema.js'
+import { interviewPrepPrompt } from './prompt.js'
 
 export type GeminiRetryListener = (retryNumber: number, responseStatus: number) => void
 

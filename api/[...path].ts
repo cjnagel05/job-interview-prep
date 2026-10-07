@@ -1,3 +1,3 @@
-import { createApp } from '../server/app.ts'
+import { createApp } from '../server/app.js'
 
 export default createApp(undefined, { serveFrontend: false })
