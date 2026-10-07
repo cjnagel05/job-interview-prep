@@ -6,8 +6,9 @@ import { createInterviewAnalysisCache } from './analysis-cache.ts'
 
 // The optional analyzer lets tests exercise the endpoint without spending API credits.
 type Analyzer = (jobDescription: string, onRetry?: GeminiRetryListener) => Promise<InterviewPrepAnalysis>
+type AppOptions = { serveFrontend?: boolean }
 
-export function createApp(analyze: Analyzer = analyzeJobDescription) {
+export function createApp(analyze: Analyzer = analyzeJobDescription, options: AppOptions = {}) {
   const app = express()
   const cachedAnalysis = createInterviewAnalysisCache()
   app.disable('x-powered-by')
@@ -60,7 +61,7 @@ export function createApp(analyze: Analyzer = analyzeJobDescription) {
   app.use('/api', (_request, response) => {
     response.status(404).json({ error: 'API endpoint not found.', category: 'invalid_input' })
   })
-  if (process.env.NODE_ENV === 'production') {
+  if (options.serveFrontend ?? process.env.NODE_ENV === 'production') {
     // npm starts the service from the project root. Serve only Vite's public build.
     const distDirectory = path.resolve('dist')
     app.use(express.static(distDirectory, { dotfiles: 'deny' }))

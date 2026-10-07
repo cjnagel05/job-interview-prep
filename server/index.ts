@@ -2,7 +2,7 @@ import path from 'node:path'
 import dotenv from 'dotenv'
 import { createApp } from './app.ts'
 
-// npm runs from the project root. Render's environment takes precedence over .env.
+// npm runs from the project root. The host environment takes precedence over .env.
 dotenv.config({ path: path.resolve('.env'), quiet: true })
 
 const port = Number(process.env.PORT || 3001)

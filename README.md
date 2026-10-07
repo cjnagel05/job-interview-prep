@@ -14,6 +14,29 @@ This command runs Vite on port 5173 and Express on local port 3001. Ctrl+C stops
 both. Restart the command after changing `.env`. On systems where npm works
 directly, `npm run dev` is equivalent to `npm.cmd run dev`.
 
+## Deploy to Vercel
+
+Connect the repository to Vercel with the project root as the Root Directory.
+The checked-in `vercel.json` sets the Vite framework, `npm run build`, and
+`dist` as the static output directory. Vercel serves those built assets from its
+CDN and applies an SPA rewrite so frontend routes load `index.html`.
+
+The `api/[...path].ts` entry exports the existing Express app as a Vercel
+Function. It handles `/api/analyze` without starting a persistent server; the
+serverless entry disables Express's local production static-file middleware.
+Local `npm run dev` still starts Vite and the standalone Express listener, with
+the existing Vite `/api` proxy.
+
+In Vercel Project Settings, configure `GEMINI_API_KEY` for Production and
+Preview (and Development if using `vercel dev`). Do not prefix it with `VITE_`.
+The in-memory analysis cache is per warm Function instance and may be cleared
+when Vercel replaces that instance.
+
+The existing `server/index.ts`, `server/production.ts`, `tsconfig.build.json`,
+and `start` script are the previous standalone Node-server deployment path.
+Vercel does not use them; they are retained for hosts that still run a
+long-lived Node process. No working production code was removed.
+
 ## How analysis works
 
 - The form accepts a job description between 100 and 20,000 characters and rejects text without basic job-description signals.
@@ -48,8 +71,8 @@ the app does not write it to a database or browser storage.
 - `npm.cmd run lint`: run Oxlint.
 
 `npm.cmd run preview` previews only the built frontend. The `/api` proxy is for
-development; a deployment must route `/api` to the separately running backend.
-`npm.cmd run start:server` starts only the backend.
+development. `npm.cmd run start:server` starts only the local Express API;
+`npm.cmd start` starts the optional compiled Node production server.
 
 Official references: [Gemini Interactions API](https://ai.google.dev/api/interactions-api)
 and [structured outputs](https://ai.google.dev/gemini-api/docs/structured-output).
