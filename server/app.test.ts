@@ -172,20 +172,20 @@ test('analysis cache normalizes whitespace, shares in-flight work, and stays bou
   assert.equal(calls, 4, 'the oldest entry should be evicted at the configured maximum')
 })
 
-test('Gemini retries only approved transient statuses, at most twice', async () => {
+test('Gemini retries only approved transient statuses, with at most two total attempts', async () => {
   let attempts = 0
   const waits: number[] = []
   const retries: Array<[number, number]> = []
   const result = await retryGeminiRequest(async () => {
     attempts += 1
-    if (attempts < 3) throw Object.assign(new Error('upstream failure'), { status: attempts === 1 ? 503 : 429 })
+    if (attempts < 2) throw Object.assign(new Error('upstream failure'), { status: 503 })
     return 'complete'
   }, (retryNumber, status) => retries.push([retryNumber, status]), async (milliseconds) => { waits.push(milliseconds) })
   assert.equal(result, 'complete')
-  assert.equal(attempts, 3)
-  assert.deepEqual(retries, [[1, 503], [2, 429]])
+  assert.equal(attempts, 2)
+  assert.deepEqual(retries, [[1, 503]])
   assert(waits[0] >= 1000 && waits[0] <= 1250)
-  assert(waits[1] >= 2000 && waits[1] <= 2250)
+  assert.equal(waits.length, 1)
 
   for (const status of [408, 429, 500, 502, 503, 504]) {
     let transientAttempts = 0
@@ -198,7 +198,7 @@ test('Gemini retries only approved transient statuses, at most twice', async () 
     assert.equal(transientAttempts, 2)
   }
 
-  for (const status of [400, 401, 402, 403]) {
+  for (const status of [400, 401, 402, 403, 404, 422]) {
     let nonTransientAttempts = 0
     await assert.rejects(retryGeminiRequest(async () => {
       nonTransientAttempts += 1

@@ -9,6 +9,9 @@
     },
     "api/[...path].ts": {
       "maxDuration": 90
+    },
+    "api/practice-feedback.ts": {
+      "maxDuration": 90
     }
   },
   "rewrites": [

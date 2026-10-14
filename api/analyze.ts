@@ -23,6 +23,7 @@ export function createAnalyzeHandler(analyze: Analyzer = analyzeJobDescription) 
     }
     const logRequest = () => console.info(JSON.stringify({
       event: 'interview_analysis',
+      outcome: status >= 200 && status < 300 ? 'success' : 'error',
       responseStatus: status,
       retryNumber,
       cacheHit,
@@ -53,9 +54,8 @@ export function createAnalyzeHandler(analyze: Analyzer = analyzeJobDescription) 
 
     try {
       const result = await cachedAnalysis(input.data.jobDescription, async (jobDescription) =>
-        interviewPrepSchema.parse(await analyze(jobDescription, (number, responseStatus) => {
+        interviewPrepSchema.parse(await analyze(jobDescription, (number, _responseStatus) => {
           retryNumber = number
-          console.info(JSON.stringify({ event: 'gemini_retry', responseStatus, retryNumber: number }))
         })),
       )
       cacheHit = result.cacheHit

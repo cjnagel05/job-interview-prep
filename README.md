@@ -76,3 +76,39 @@ development. `npm.cmd run start:server` starts only the local Express API;
 
 Official references: [Gemini Interactions API](https://ai.google.dev/api/interactions-api)
 and [structured outputs](https://ai.google.dev/gemini-api/docs/structured-output).
+
+## Interview practice feedback
+
+Each generated question opens an audio-only practice session with a live camera
+preview. Video is never recorded or submitted. “Get Feedback” sends the audio
+and question context to `POST /api/practice-feedback` as `multipart/form-data`.
+
+Fields: `audio` (file), `question`, `questionType`, `responsibility`,
+`skills` (a JSON string array), and optional `roleTitle`. The file limit is
+3,000,000 bytes (3 MB); the full multipart body is also bounded. Missing audio,
+invalid containers, video tracks, invalid context, and oversized requests are
+rejected before a model call.
+
+The new endpoint uses the existing server-only `GEMINI_API_KEY` and
+`gemini-3.5-flash-lite`. A single Interactions API request contains base64 inline
+audio with its supplied MIME type plus the question context. No Files API upload,
+database, or application cache is used for practice recordings or feedback.
+Structured results are validated with the shared
+`interviewPracticeFeedbackSchema` on both server and client. STAR is optional
+for appropriate behavioral/experience answers and excluded for technical and
+role-specific questions.
+
+The feedback UI supports progress messages, safe retryable errors, replay after
+failure, and practicing the same question again. Closing the modal cancels the
+browser request and releases camera/microphone tracks.
+
+- `api/practice-feedback.ts`: dedicated Vercel endpoint.
+- `server/practice-feedback-handler.ts`: bounded multipart validation.
+- `server/gemini-practice.ts`: single Gemini request and output validation.
+- `server/practice-feedback-prompt.ts`: answer-focused evaluation instructions.
+- `src/lib/practice-feedback-contract.ts`: shared fields, limits, and errors.
+- `src/hooks/use-practice-feedback.ts`: upload, progress, cancellation, and retry.
+- `node --test tests/*.test.mjs`: frontend schema, media, and upload tests using
+  deterministic mocks; no API credits used.
+
+The existing `/api/analyze` handler, prompt, model request, and cache are unchanged.

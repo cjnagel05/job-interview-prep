@@ -1,8 +1,10 @@
-import type { Ref } from 'react'
+import { useState, type Ref } from 'react'
+import { Button } from '@/components/ui/button'
+import { InterviewPractice } from '@/components/interview-practice'
 import { BriefcaseBusiness, Check, ClipboardList, MessageCircleQuestion } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
-import type { InterviewPrepAnalysis, InterviewQuestionType } from '@/lib/interview-prep-schema'
+import type { InterviewPrepAnalysis, InterviewPrepQuestion, InterviewQuestionType } from '@/lib/interview-prep-schema'
 
 const questionTypeLabels: Record<InterviewQuestionType, string> = {
   behavioral: 'Behavioral',
@@ -18,6 +20,8 @@ const questionGroups: { title: string; types: InterviewQuestionType[] }[] = [
 ]
 
 export function InterviewPrepResults({ results, headingRef }: { results: InterviewPrepAnalysis; headingRef: Ref<HTMLHeadingElement> }) {
+  const [practiceQuestion, setPracticeQuestion] = useState<InterviewPrepQuestion | null>(null)
+
   return (
     <section className="mx-auto mt-16 max-w-5xl scroll-mt-8" aria-labelledby="results-title">
       <div className="mb-7">
@@ -83,6 +87,7 @@ export function InterviewPrepResults({ results, headingRef }: { results: Intervi
                           <div><p className="text-xs font-semibold text-foreground">Why this matters</p><p className="mt-1 text-sm leading-6 text-muted-foreground">{item.whyItMatters}</p></div>
                           <div><p className="text-xs font-semibold text-foreground">Responsibility behind this question</p><p className="mt-1 text-sm leading-6 text-muted-foreground">{item.basedOn}</p></div>
                         </div>
+                        <Button type="button" variant="outline" className="mt-5 h-9 px-4 text-primary" onClick={() => setPracticeQuestion(item)}>Practice This Question</Button>
                       </CardContent>
                     </Card>
                   ))}
@@ -92,6 +97,7 @@ export function InterviewPrepResults({ results, headingRef }: { results: Intervi
           })}
         </div>
       </section>
+      {practiceQuestion && <InterviewPractice question={practiceQuestion} roleTitle={results.roleTitle} onClose={() => setPracticeQuestion(null)} />}
     </section>
   )
 }

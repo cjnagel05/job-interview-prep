@@ -3,10 +3,12 @@ import path from 'node:path'
 import { interviewPrepSchema, jobDescriptionInputSchema, type AnalysisErrorCategory, type InterviewPrepAnalysis } from '../src/lib/interview-prep-schema.js'
 import { AnalysisError, analyzeJobDescription, type GeminiRetryListener } from './gemini.js'
 import { createInterviewAnalysisCache } from './analysis-cache.js'
+import { createPracticeFeedbackHandler, type PracticeReviewer } from './practice-feedback-handler.js'
+import { MAX_PRACTICE_REQUEST_BYTES, practiceFeedbackErrorMessages } from '../src/lib/practice-feedback-contract.js'
 
 // The optional analyzer lets tests exercise the endpoint without spending API credits.
 type Analyzer = (jobDescription: string, onRetry?: GeminiRetryListener) => Promise<InterviewPrepAnalysis>
-type AppOptions = { serveFrontend?: boolean }
+type AppOptions = { serveFrontend?: boolean; practiceReviewer?: PracticeReviewer }
 
 export function createApp(analyze: Analyzer = analyzeJobDescription, options: AppOptions = {}) {
   const app = express()
@@ -25,6 +27,7 @@ export function createApp(analyze: Analyzer = analyzeJobDescription, options: Ap
     let cacheHit = false
     const logRequest = () => console.info(JSON.stringify({
       event: 'interview_analysis',
+      outcome: response.statusCode >= 200 && response.statusCode < 300 ? 'success' : 'error',
       responseStatus: response.statusCode,
       retryNumber,
       cacheHit,
@@ -41,9 +44,9 @@ export function createApp(analyze: Analyzer = analyzeJobDescription, options: Ap
     }
     try {
       const result = await cachedAnalysis(input.data.jobDescription, async (jobDescription) =>
-        interviewPrepSchema.parse(await analyze(jobDescription, (number, status) => {
+        interviewPrepSchema.parse(await analyze(jobDescription, (number, _status) => {
           retryNumber = number
-          console.info(JSON.stringify({ event: 'gemini_retry', responseStatus: status, retryNumber: number }))
+
         })),
       )
       cacheHit = result.cacheHit
@@ -58,6 +61,24 @@ export function createApp(analyze: Analyzer = analyzeJobDescription, options: Ap
       logRequest()
     }
   })
+  // This multipart route is isolated from the existing JSON analysis route.
+  const handlePracticeFeedback = createPracticeFeedbackHandler(options.practiceReviewer)
+  app.post('/api/practice-feedback', express.raw({ type: 'multipart/form-data', limit: MAX_PRACTICE_REQUEST_BYTES }), async (request, response) => {
+    const headers = new Headers()
+    if (request.headers['content-type']) headers.set('Content-Type', request.headers['content-type'])
+    const webRequest = new Request('http://localhost/api/practice-feedback', {
+      method: 'POST', headers, body: Buffer.isBuffer(request.body) ? new Uint8Array(request.body) : undefined,
+    })
+    const result = await handlePracticeFeedback(webRequest)
+    response.status(result.status).type('application/json').send(await result.text())
+  })
+  const handlePracticeUploadError: ErrorRequestHandler = (error, _request, response, _next) => {
+    const category = error?.type === 'entity.too.large' ? 'recording_too_large' : 'invalid_request'
+    response.status(category === 'recording_too_large' ? 413 : 400).json({
+      error: practiceFeedbackErrorMessages[category], category,
+    })
+  }
+  app.use('/api/practice-feedback', handlePracticeUploadError)
   app.use('/api', (_request, response) => {
     response.status(404).json({ error: 'API endpoint not found.', category: 'invalid_input' })
   })
