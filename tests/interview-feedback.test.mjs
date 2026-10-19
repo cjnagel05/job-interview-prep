@@ -60,7 +60,7 @@ test('scores accept only integers from 1 to 5 for every dimension', () => {
   }
 })
 
-test('strengths and improvements each require 1–4 nonempty strings', () => {
+test('strengths and improvements for answers needing changes require 1–4 nonempty strings', () => {
   for (const field of ['strengths', 'improvements']) {
     for (const count of [1, 4]) {
       const feedback = valid()
@@ -76,12 +76,26 @@ test('strengths and improvements each require 1–4 nonempty strings', () => {
 })
 
 test('transcript, overall feedback, next focus, and question type are required', () => {
-  for (const key of ['transcript', 'overallFeedback', 'nextAttemptFocus', 'questionType']) {
+  for (const key of ['transcript', 'overallFeedback', 'overallAssessment', 'nextAttemptFocus', 'questionType']) {
     const feedback = valid()
     delete feedback[key]
     assert.equal(model.interviewFeedbackSchema.safeParse(feedback).success, false)
   }
   assert.equal(model.interviewFeedbackSchema.safeParse({ ...valid(), questionType: 'other' }).success, false)
+})
+
+test('assessment enforces empty improvements and null next focus only for strong-as-is answers', () => {
+  const strong = { ...valid(), overallAssessment: 'strong-as-is', improvements: [], nextAttemptFocus: null }
+  assert.equal(model.interviewFeedbackSchema.safeParse(strong).success, true)
+  for (const invalid of [
+    { ...strong, improvements: ['Could add another example.'] },
+    { ...strong, nextAttemptFocus: 'Could describe a challenge.' },
+    { ...strong, overallAssessment: 'minor-refinement' },
+    { ...strong, overallAssessment: 'needs-improvement' },
+    { ...strong, overallAssessment: 'perfect' },
+    { ...valid(), nextAttemptFocus: null },
+  ]) assert.equal(model.interviewFeedbackSchema.safeParse(invalid).success, false)
+  assert.equal(model.interviewFeedbackSchema.safeParse({ ...valid(), overallAssessment: 'minor-refinement' }).success, true)
 })
 
 test('STAR can be omitted for every question type but is restricted to narrative types', () => {
@@ -147,4 +161,18 @@ test('feedback presentation hides empty improvements without inventing correctio
     assert.equal(html.includes('Areas to improve'), false)
     assert.equal(html.includes('One goal for your next attempt'), false)
   }
+})
+
+test('strong-as-is feedback renders positive assessment without an empty next-attempt goal', () => {
+  const feedback = model.interviewFeedbackSchema.parse({
+    ...valid(), overallAssessment: 'strong-as-is', improvements: [], nextAttemptFocus: null,
+    overallFeedback: 'Your Agile experience is clear and concrete. This answer is strong as-is.',
+    scores: { relevance: 5, specificity: 5, clarity: 5, jobAlignment: 5 },
+  })
+  const html = renderToStaticMarkup(React.createElement(view.InterviewFeedbackView, { feedback, onPracticeAgain() {} }))
+  assert.ok(html.includes(feedback.overallFeedback))
+  assert.ok(html.includes('Practice Again'))
+  assert.equal(html.includes('Areas to improve'), false)
+  assert.equal(html.includes('Keep in mind'), false)
+  assert.equal(html.includes('One goal for your next attempt'), false)
 })

@@ -4,6 +4,7 @@ const samples = {
   behavioral: {
     questionType: 'behavioral',
     transcript: 'During a busy project, our team disagreed about priorities. I was responsible for helping us agree on a plan. I asked each person to explain their concerns, compared the options against our deadline, and proposed a smaller first release. We agreed on the plan and delivered it on time.',
+    overallAssessment: 'needs-improvement',
     overallFeedback: 'This example has a clear sequence and shows how you handled disagreement. Explain your own decision in more detail and add evidence of the outcome to make the story more convincing.',
     scores: { relevance: 4, specificity: 3, clarity: 4, jobAlignment: 3 },
     strengths: [
@@ -20,6 +21,7 @@ const samples = {
   experience: {
     questionType: 'experience',
     transcript: 'In my last role, I led a project to improve a slow internal process. My goal was to reduce the time our team spent on repeated requests. I reviewed the workflow, spoke with the people using it, and created a simpler intake checklist. The team adopted the checklist, and requests became easier to handle.',
+    overallAssessment: 'needs-improvement',
     overallFeedback: 'You connect your experience to a practical problem and describe the steps you took. Add the scale of the project and quantify what changed after the team adopted your solution.',
     scores: { relevance: 4, specificity: 3, clarity: 4, jobAlignment: 4 },
     strengths: [
@@ -36,6 +38,7 @@ const samples = {
   technical: {
     questionType: 'technical',
     transcript: 'I would first clarify the requirements and constraints. Then I would compare two possible approaches, looking at reliability, complexity, and performance. I would start with the simplest approach that meets the requirements, test the edge cases, and use the results to decide whether we need a more complex solution.',
+    overallAssessment: 'needs-improvement',
     overallFeedback: 'Your explanation has a sensible structure and considers trade-offs. A concrete example, explicit assumptions, and a description of how you would verify the solution would make it more useful.',
     scores: { relevance: 4, specificity: 2, clarity: 4, jobAlignment: 3 },
     strengths: [
@@ -51,6 +54,7 @@ const samples = {
   'role-specific': {
     questionType: 'role-specific',
     transcript: 'I would confirm the goal and agree with stakeholders on what success looks like. I would prioritize the work by impact and urgency, identify dependencies, and create a plan with clear owners. I would check progress regularly and adjust the plan when new information changes the priorities.',
+    overallAssessment: 'needs-improvement',
     overallFeedback: 'You outline an organized approach to planning and collaboration. Make the answer more specific by explaining how you would prioritize competing requests and measure success in this role.',
     scores: { relevance: 4, specificity: 3, clarity: 4, jobAlignment: 3 },
     strengths: [

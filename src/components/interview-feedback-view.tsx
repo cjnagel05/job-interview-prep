@@ -103,8 +103,10 @@ export function InterviewFeedbackView({ feedback, onPracticeAgain }: {
       )}
 
       <section className="rounded-2xl border bg-white p-5" aria-labelledby="next-focus-title">
-        <h4 id="next-focus-title" className="text-sm font-semibold text-primary">{improvements.length > 0 ? 'One goal for your next attempt' : 'Keep in mind'}</h4>
-        <p className="mt-2 text-sm leading-7">{feedback.nextAttemptFocus}</p>
+        {feedback.nextAttemptFocus !== null && <>
+          <h4 id="next-focus-title" className="text-sm font-semibold text-primary">{improvements.length > 0 ? 'One goal for your next attempt' : 'Keep in mind'}</h4>
+          <p className="mt-2 text-sm leading-7">{feedback.nextAttemptFocus}</p>
+        </>}
         <Button type="button" onClick={onPracticeAgain} className="mt-4 min-h-11 px-4"><RotateCcw aria-hidden="true" />Practice Again</Button>
       </section>
     </section>

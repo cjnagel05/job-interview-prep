@@ -25,10 +25,11 @@ export const starAssessmentSchema = z.object({
 const feedbackFields = z.object({
   transcript: z.string(),
   overallFeedback: feedbackText,
+  overallAssessment: z.enum(['strong-as-is', 'minor-refinement', 'needs-improvement']),
   scores: interviewFeedbackScoresSchema,
   strengths: z.array(feedbackText).min(1).max(4),
-  improvements: z.array(feedbackText).min(1).max(4),
-  nextAttemptFocus: feedbackText,
+  improvements: z.array(feedbackText).max(4),
+  nextAttemptFocus: feedbackText.nullable(),
 })
 
 // STAR is optional even for narrative questions: include it only when a
@@ -42,7 +43,23 @@ export const interviewFeedbackSchema = z.discriminatedUnion('questionType', [
     questionType: z.enum(['technical', 'role-specific']),
     star: z.never().optional(),
   }),
-])
+]).superRefine((feedback, ctx) => {
+  if (feedback.overallAssessment === 'strong-as-is') {
+    if (feedback.improvements.length !== 0) {
+      ctx.addIssue({ code: 'custom', path: ['improvements'], message: 'Strong answers must not include corrections.' })
+    }
+    if (feedback.nextAttemptFocus !== null) {
+      ctx.addIssue({ code: 'custom', path: ['nextAttemptFocus'], message: 'Strong answers must not require another attempt.' })
+    }
+  } else {
+    if (feedback.improvements.length === 0) {
+      ctx.addIssue({ code: 'custom', path: ['improvements'], message: 'Identify a meaningful weakness for this assessment.' })
+    }
+    if (feedback.nextAttemptFocus === null) {
+      ctx.addIssue({ code: 'custom', path: ['nextAttemptFocus'], message: 'Provide a focus for the identified weakness.' })
+    }
+  }
+})
 
 export type FeedbackQuestionType = z.infer<typeof feedbackQuestionTypeSchema>
 export type InterviewFeedback = z.infer<typeof interviewFeedbackSchema>

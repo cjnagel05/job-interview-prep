@@ -72,6 +72,26 @@ test('blocks missing, oversized, non-audio, and invalid-context uploads locally'
   assert.equal(calls, 0)
 })
 
+test('client accepts strong-as-is Agile feedback without adding optional improvements', async () => {
+  const feedback = {
+    ...fixtures.getSampleInterviewFeedback('experience'),
+    overallAssessment: 'strong-as-is',
+    transcript: 'I worked in two-week sprints, participated in sprint planning and standups, completed assigned development work, communicated progress, and adapted to changing requirements.',
+    overallFeedback: 'Clear, concrete evidence of Agile teamwork and your personal contribution.',
+    scores: { relevance: 5, specificity: 5, clarity: 5, jobAlignment: 5 },
+    improvements: [], nextAttemptFocus: null,
+  }
+  delete feedback.star
+  const api = await client(async () => Response.json(feedback))
+  const result = await api.requestPracticeFeedback(new Blob(['audio'], { type: 'audio/webm' }), {
+    ...context, questionType: 'experience',
+    question: 'Describe your experience working within agile methodologies on software development teams.',
+  }, new AbortController().signal)
+  assert.equal(result.overallAssessment, 'strong-as-is')
+  assert.equal(result.improvements.length, 0)
+  assert.equal(result.nextAttemptFocus, null)
+})
+
 test('maps error categories and platform errors to safe messages instead of displaying server text', async () => {
   for (const [status, body, message] of [
     [400, { category: 'invalid_audio', error: 'RAW SECRET ERROR' }, /could not read/],

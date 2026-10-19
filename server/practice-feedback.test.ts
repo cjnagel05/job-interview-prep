@@ -20,6 +20,7 @@ const context = {
 const feedback: InterviewPracticeFeedback = {
   questionType: 'behavioral',
   transcript: 'I reviewed the intake process and created a checklist that reduced missed steps.',
+  overallAssessment: 'minor-refinement',
   overallFeedback: 'You described your own actions clearly. Add a concrete outcome.',
   scores: { relevance: 4, specificity: 3, clarity: 4, jobAlignment: 4 },
   strengths: ['Identifies your own contribution.'],
@@ -217,6 +218,71 @@ test('technical output schema omits STAR and retains the question type', async (
   assert.equal(result.questionType, 'technical')
   assert.equal(result.star, undefined)
   assert.equal(interviewPracticeFeedbackSchema.safeParse(result).success, true)
+})
+
+test('Agile experience calibration forbids optional enrichment and preserves strong-as-is through reviewer and endpoint', async () => {
+  const agileContext = {
+    question: 'Describe your experience working within agile methodologies on software development teams.',
+    questionType: 'experience' as const,
+    responsibility: 'Develop software collaboratively in an Agile team.',
+    skills: ['Agile methodologies', 'Communication', 'Adaptability'],
+    roleTitle: 'Software developer',
+  }
+  const agileFeedback: InterviewPracticeFeedback = {
+    questionType: 'experience',
+    transcript: 'I worked in two-week sprints on a software development team. I took part in sprint planning, picked up assigned development work, and communicated my progress and blockers in daily standups. When requirements changed, I discussed the changes with the team and adjusted my work to the sprint priorities.',
+    overallAssessment: 'strong-as-is',
+    overallFeedback: 'Your answer clearly demonstrates hands-on Agile experience, your contribution, and how you communicated and adapted within the team.',
+    scores: { relevance: 5, specificity: 5, clarity: 5, jobAlignment: 5 },
+    strengths: ['Concrete sprint and ceremony experience.', 'Clear personal contribution, communication, and adaptation.'],
+    improvements: [],
+    nextAttemptFocus: null,
+  }
+  let calls = 0
+  const review = createPracticeFeedbackReviewer(async (input) => {
+    calls += 1
+    assert.equal(input.model, 'gemini-3.5-flash-lite')
+    assert.ok(input.input[0].type === 'text' && input.input[0].text.includes(agileContext.question))
+    const prompt = input.system_instruction
+    for (const rule of [
+      'ACTUAL interview question FIRST',
+      'Do not criticize an answer for omitting information that the question did not',
+      'meaningful weakness that could hurt',
+      'Would I genuinely advise this candidate to change this answer before an',
+      'If it is only optional enrichment, do NOT include it as an improvement.',
+      'A strong answer',
+      'does NOT need to be perfect or exhaustive',
+      'Scores of 5/5 are allowed',
+      'Do not artificially lower scores',
+      agileContext.question.replace(' on software development teams.', ' on\nsoftware development teams.'),
+      'Could incorporate a specific challenge faced during a sprint',
+      'If a different question explicitly asks about a sprint challenge or its outcome',
+    ]) assert.ok(prompt.includes(rule), `Missing evaluation rule: ${rule}`)
+    const schema = input.response_format[0].schema as {
+      properties: { improvements: { minItems?: number }; nextAttemptFocus: unknown; overallAssessment: { enum: string[] } }
+    }
+    assert.equal(schema.properties.improvements.minItems ?? 0, 0)
+    assert.ok(JSON.stringify(schema.properties.nextAttemptFocus).includes('null'))
+    assert.ok(schema.properties.overallAssessment.enum.includes('strong-as-is'))
+    return { status: 'completed', output_text: JSON.stringify(agileFeedback) }
+  })
+  const response = await createPracticeFeedbackHandler(review)(request(agileContext))
+  assert.equal(response.status, 200)
+  assert.deepEqual(await response.json(), agileFeedback)
+  assert.equal(calls, 1)
+})
+
+test('reviewer rejects contradictory strong-as-is feedback instead of displaying optional corrections', async () => {
+  for (const changes of [
+    { improvements: ['Could describe a sprint challenge.'], nextAttemptFocus: null },
+    { improvements: [], nextAttemptFocus: 'Add another example.' },
+  ]) {
+    const review = createPracticeFeedbackReviewer(async () => ({
+      status: 'completed', output_text: JSON.stringify({ ...feedback, overallAssessment: 'strong-as-is', ...changes }),
+    }))
+    await assert.rejects(() => review({ ...context, audio: wav(), mimeType: 'audio/wav' }),
+      (error: unknown) => error instanceof PracticeFeedbackError && error.category === 'temporary_service_issue')
+  }
 })
 
 test('reviewer rejects malformed, incomplete, mismatched, out-of-range, and silent output', async () => {
