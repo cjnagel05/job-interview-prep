@@ -1,5 +1,5 @@
 import { useRef, useState, type FormEvent } from 'react'
-import { ArrowRight, FileText, LoaderCircle, Sparkles } from 'lucide-react'
+import { ArrowRight, FileText, LoaderCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
@@ -64,16 +64,16 @@ export function AnalysisTool() {
 
   return (
     <>
-      <section id="prepare" className="mx-auto max-w-4xl scroll-mt-8" aria-labelledby="prepare-title">
-        <Card className="gap-0 rounded-2xl bg-white py-0 shadow-[0_8px_40px_-16px_rgba(24,55,49,0.18)] ring-border">
+      <section id="prepare" className="mx-auto max-w-5xl scroll-mt-8" aria-labelledby="prepare-title">
+        <Card className="gap-0 rounded-2xl bg-white py-0 shadow-none ring-border">
           <CardHeader className="gap-0 px-6 pt-7 sm:px-9 sm:pt-9">
             <div className="mb-5 flex items-center justify-between gap-3">
               <span className="flex size-10 items-center justify-center rounded-xl bg-primary/7 text-primary"><FileText className="size-5" aria-hidden="true" /></span>
-              <span className="rounded-md border bg-muted/40 px-2 py-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Start with the job description</span>
+              <span className="text-xs font-medium text-muted-foreground">Your starting point</span>
             </div>
-            <h2 id="prepare-title" className="text-2xl font-semibold tracking-tight">Build your interview prep</h2>
+            <h2 id="prepare-title" className="text-2xl font-semibold tracking-tight">Start with the role</h2>
             <p id="demo-note" className="mt-2 text-sm leading-6 text-muted-foreground">
-              Add the full description so your preparation can focus on what this role actually asks you to do.
+              Paste the full job description to build a plan you can practice.
             </p>
           </CardHeader>
           <CardContent className="px-6 pb-7 pt-6 sm:px-9 sm:pb-9">
@@ -96,7 +96,7 @@ export function AnalysisTool() {
                 disabled={isLoading}
                 maxLength={maxDescriptionLength}
                 required
-                className="min-h-60 resize-y rounded-xl bg-[#fcfdfc] p-4 text-sm leading-7 shadow-none placeholder:text-muted-foreground/70 focus-visible:ring-primary/15 sm:min-h-64"
+                className="min-h-60 resize-y rounded-xl bg-[#fcfdfc] p-4 text-base leading-7 sm:text-sm shadow-none placeholder:text-muted-foreground/70 focus-visible:ring-primary/15 sm:min-h-64"
               />
               <div id="character-count" className="mt-2 text-right text-xs tabular-nums text-muted-foreground">{description.length.toLocaleString()} / {maxDescriptionLength.toLocaleString()} characters</div>
               <div id="analysis-error" role="alert">{error && <p className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">{error}</p>}</div>
@@ -104,8 +104,8 @@ export function AnalysisTool() {
                 <p className="max-w-md text-xs leading-5 text-muted-foreground">
                   Your job description is sent to Google Gemini for analysis and is not saved by this app.
                 </p>
-                <Button type="submit" disabled={isLoading || !description.trim()} className="h-11 rounded-lg px-5 text-sm shadow-sm">
-                  {isLoading ? <LoaderCircle className="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" /> : <Sparkles className="size-4" aria-hidden="true" />}
+                <Button type="submit" disabled={isLoading || !description.trim()} className="min-h-12 w-full rounded-lg px-5 text-sm sm:w-auto">
+                  {isLoading ? <LoaderCircle className="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" /> : <FileText className="size-4" aria-hidden="true" />}
                   {isLoading ? 'Building your prep...' : 'Build My Interview Prep'}<ArrowRight className="ml-2 size-4" aria-hidden="true" />
                 </Button>
               </div>

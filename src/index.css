@@ -12,17 +12,27 @@ body {
 }
 
 .page-width {
-  width: min(100% - 3rem, 1080px);
+  width: min(100% - 2.5rem, 1080px);
   margin-inline: auto;
 }
 
 .eyebrow {
-  @apply text-xs font-semibold uppercase tracking-[0.16em] text-primary;
+  @apply text-xs font-semibold uppercase tracking-[0.12em] text-primary;
 }
 
 .nav-link {
   @apply rounded-sm transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary;
 }
+
+h1, h2, h3 { text-wrap: balance; }
+@media (min-width: 768px) { .page-width { width: min(100% - 4rem, 1080px); } }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+/* Generated skill names and answers must fit narrow cards. */
+[data-slot="card"], dialog section { overflow-wrap: anywhere; }
+progress { overflow: hidden; border: 0; border-radius: 999px; background: var(--border); }
+progress::-webkit-progress-bar { background: var(--border); }
+progress::-webkit-progress-value { border-radius: 999px; background: var(--primary); }
+progress::-moz-progress-bar { border-radius: 999px; background: var(--primary); }
 
 ::selection {
   background: #d4e8dc;
@@ -56,6 +66,9 @@ body {
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
+  --color-primary-hover: #2a5643;
+  --color-summary: #edf4f0;
+  --color-summary-border: #d6e4db;
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
@@ -75,7 +88,7 @@ body {
   --background: #f8faf8;
   --foreground: #202f2a;
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: #202f2a;
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
   --primary: #32644f;
@@ -83,13 +96,14 @@ body {
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
-  --muted-foreground: #64736c;
+  --muted-foreground: #5e6d66;
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
   --border: #e1e7e2;
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --input: #7f8f86;
+  --ring: #32644f;
+  color-scheme: light;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);

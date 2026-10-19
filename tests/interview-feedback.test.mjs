@@ -133,3 +133,18 @@ test('feedback screen omits STAR when the assessment is absent', () => {
     assert.equal(html.includes('STAR assessment'), false)
   }
 })
+
+test('feedback presentation hides empty improvements without inventing corrections', () => {
+  for (const improvements of [[], [' ', '\n']]) {
+    const feedback = { ...valid(), improvements, overallFeedback: 'This answer is strong as-is.' }
+    const html = renderToStaticMarkup(React.createElement(view.InterviewFeedbackView, {
+      feedback,
+      onPracticeAgain() {},
+    }))
+    assert.ok(html.includes('This answer is strong as-is.'))
+    assert.ok(html.includes('Strengths'))
+    assert.ok(html.includes('Practice Again'))
+    assert.equal(html.includes('Areas to improve'), false)
+    assert.equal(html.includes('One goal for your next attempt'), false)
+  }
+})

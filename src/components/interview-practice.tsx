@@ -64,11 +64,11 @@ export function InterviewPractice({ question, roleTitle, onClose }: {
       aria-labelledby="practice-title"
       aria-describedby="practice-description"
       onCancel={(event) => { event.preventDefault(); onClose() }}
-      className="fixed inset-0 m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-4xl overflow-y-auto rounded-2xl border bg-background p-0 text-foreground shadow-xl backdrop:bg-foreground/40"
+      className="fixed inset-0 m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-4xl overflow-y-auto rounded-2xl border bg-background p-0 text-foreground shadow-lg backdrop:bg-foreground/40"
     >
-      <div className="flex items-center justify-between gap-4 border-b bg-white px-5 py-4 sm:px-7">
+      <div className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b bg-white px-5 py-4 sm:px-7">
         <div>
-          <p className="eyebrow">Interview practice</p>
+          <p className="eyebrow">JobQue Interview Prep</p>
           <h2 id="practice-title" className="mt-1 text-lg font-semibold">Make your answer feel natural</h2>
         </div>
         <Button type="button" variant="ghost" size="icon" aria-label="Close practice" onClick={onClose} autoFocus>
@@ -80,12 +80,12 @@ export function InterviewPractice({ question, roleTitle, onClose }: {
           Practice for up to 90 seconds. Your camera is for a live preview; only your audio is recorded.
           When you choose Get Feedback, your audio and question context are sent to Google Gemini for review. Video is never sent.
         </p>
-        <section className="rounded-xl border bg-white p-5" aria-label="Question context">
-          <Badge variant="outline" className="rounded-md text-primary">{categoryLabels[question.type]}</Badge>
+        <section className="rounded-2xl border bg-white p-5" aria-label="Question context">
+          <Badge variant="outline" className="rounded-full text-primary">{categoryLabels[question.type]}</Badge>
           <h3 className="mt-3 text-lg font-medium leading-7">{question.question}</h3>
           <p className="mt-4 text-xs font-semibold">Skills being evaluated</p>
           <div className="mt-2 flex flex-wrap gap-2">
-            {question.skills.map((skill) => <Badge key={skill} variant="outline" className="rounded-md bg-background font-normal text-muted-foreground">{skill}</Badge>)}
+            {question.skills.map((skill) => <Badge key={skill} variant="outline" className="rounded-full bg-background font-normal text-muted-foreground">{skill}</Badge>)}
           </div>
           <p className="mt-4 text-xs font-semibold">Responsibility behind this question</p>
           <p className="mt-1 text-sm leading-6 text-muted-foreground">{question.basedOn}</p>
@@ -97,8 +97,8 @@ export function InterviewPractice({ question, roleTitle, onClose }: {
             dialogRef.current?.querySelector<HTMLButtonElement>('[data-start-practice]')?.focus()
           })
         }} /> : <>
-          <div className="grid gap-5 md:grid-cols-[1.25fr_1fr]">
-            <div className="relative flex aspect-video items-center justify-center overflow-hidden rounded-xl border bg-[#eaf2ed]">
+          <div className="grid min-w-0 gap-4 sm:grid-cols-[1.15fr_1fr]">
+            <div className="relative flex min-w-0 aspect-video items-center justify-center overflow-hidden rounded-xl border bg-summary">
               {hasCamera ? (
                 <video ref={videoRef} autoPlay muted playsInline aria-label="Live camera preview" className="absolute inset-0 size-full -scale-x-100 object-cover" />
               ) : (
@@ -108,7 +108,7 @@ export function InterviewPractice({ question, roleTitle, onClose }: {
                   <p className="mt-1 text-xs leading-5">{stream ? 'Your microphone is ready.' : 'Camera preview appears when you start.'}</p>
                 </div>
               )}
-              {hasCamera && <span className="absolute bottom-3 left-3 rounded-md bg-white/90 px-2 py-1 text-xs text-primary">Live preview · never recorded</span>}
+              {hasCamera && <span className="absolute bottom-3 left-3 rounded-full bg-white/90 px-2 py-1 text-xs text-primary">Live preview · never recorded</span>}
               {phase === 'countdown' && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/90">
                   <span className="text-5xl font-semibold tabular-nums text-primary" aria-hidden="true">{countdown}</span>
@@ -116,7 +116,7 @@ export function InterviewPractice({ question, roleTitle, onClose }: {
                 </div>
               )}
             </div>
-            <div className="flex flex-col justify-center rounded-xl border bg-white p-5">
+            <div className="flex min-w-0 flex-col justify-center rounded-2xl border bg-white p-5">
               <p role="status" className="text-sm font-medium leading-6">{status}</p>
               <div className="mt-4 flex items-baseline gap-2">
                 {phase === 'recording' && <span className="size-2 rounded-full bg-primary" aria-hidden="true" />}
@@ -125,27 +125,27 @@ export function InterviewPractice({ question, roleTitle, onClose }: {
               </div>
               <progress max={MAX_RECORDING_SECONDS} value={seconds} aria-label="Recording progress" className="mt-3 h-1.5 w-full accent-primary" />
               <div className="mt-5 flex flex-wrap gap-2">
-                {phase === 'idle' && <Button data-start-practice type="button" onClick={() => { review.reset(); void practice.startPractice() }} className="h-10 px-4"><Mic aria-hidden="true" />Start Practice</Button>}
-                {phase === 'requesting' && <Button type="button" disabled className="h-10 px-4">Connecting…</Button>}
-                {phase === 'countdown' && <Button type="button" variant="outline" onClick={practice.retake} className="h-10 px-4">Cancel countdown</Button>}
-                {phase === 'recording' && <Button type="button" onClick={practice.stopRecording} className="h-10 px-4"><Square aria-hidden="true" />Stop Recording</Button>}
-                {phase === 'saving' && <Button type="button" disabled className="h-10 px-4">Preparing audio…</Button>}
+                {phase === 'idle' && <Button data-start-practice type="button" onClick={() => { review.reset(); void practice.startPractice() }} className="min-h-11 px-4"><Mic aria-hidden="true" />Start Practice</Button>}
+                {phase === 'requesting' && <Button type="button" disabled className="min-h-11 px-4">Connecting…</Button>}
+                {phase === 'countdown' && <Button type="button" variant="outline" onClick={practice.retake} className="min-h-11 px-4">Cancel countdown</Button>}
+                {phase === 'recording' && <Button type="button" onClick={practice.stopRecording} className="min-h-11 px-4"><Square aria-hidden="true" />Stop Recording</Button>}
+                {phase === 'saving' && <Button type="button" disabled className="min-h-11 px-4">Preparing audio…</Button>}
                 {phase === 'recorded' && <>
-                  <Button type="button" variant="outline" disabled={isLoading} onClick={() => { review.reset(); practice.retake() }} className="h-10 px-4"><RotateCcw aria-hidden="true" />Retake</Button>
+                  <Button type="button" variant="outline" disabled={isLoading} onClick={() => { review.reset(); practice.retake() }} className="min-h-11 px-4"><RotateCcw aria-hidden="true" />Retake</Button>
                   <Button type="button" disabled={isLoading} onClick={() => {
                     practice.stopPreview()
                     void review.getFeedback(audioBlob, { question: question.question, questionType: question.type, responsibility: question.basedOn, skills: question.skills, roleTitle })
-                  }} className="h-10 px-4">{isLoading && <LoaderCircle className="animate-spin motion-reduce:animate-none" aria-hidden="true" />}{isLoading ? 'Reviewing…' : 'Get Feedback'}</Button>
+                  }} className="min-h-11 px-4">{isLoading && <LoaderCircle className="animate-spin motion-reduce:animate-none" aria-hidden="true" />}{isLoading ? 'Reviewing…' : 'Get Feedback'}</Button>
                 </>}
               </div>
               <p className="mt-4 text-xs leading-5 text-muted-foreground">Recording starts automatically after a 3-second countdown and stops at 90 seconds.</p>
             </div>
           </div>
-          {isLoading && <p role="status" className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm text-primary">{progressText}</p>}
+          {isLoading && <p role="status" className="rounded-lg border border-primary/20 bg-summary p-4 text-sm text-primary">{progressText}</p>}
           {feedbackError && <p role="alert" className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-900">{feedbackError}</p>}
           {cameraNotice && <p role="status" className="rounded-lg border bg-white p-3 text-sm leading-6 text-muted-foreground">{cameraNotice}</p>}
           {error && <p role="alert" className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-900">{error}</p>}
-          {audioUrl && <section className="rounded-xl border bg-white p-5" aria-label="Recorded answer">
+          {audioUrl && <section className="rounded-2xl border bg-white p-5" aria-label="Recorded answer">
             <h3 className="text-sm font-semibold">Replay your answer</h3>
             <audio controls src={audioUrl} className="mt-3 w-full" aria-label="Replay recorded audio" />
           </section>}

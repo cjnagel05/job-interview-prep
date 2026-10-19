@@ -25,15 +25,15 @@ export function InterviewPrepResults({ results, headingRef }: { results: Intervi
   return (
     <section className="mx-auto mt-16 max-w-5xl scroll-mt-8" aria-labelledby="results-title">
       <div className="mb-7">
-        <p className="eyebrow">Sample interview prep</p>
+        <p className="eyebrow">Your interview plan</p>
         <h2 id="results-title" ref={headingRef} tabIndex={-1} className="mt-2 text-3xl font-semibold tracking-tight focus:outline-none">Your role, broken down</h2>
-        <p className="mt-2 text-sm leading-6 text-muted-foreground">A static example for a {results.roleTitle} role. These results are not based on the text you pasted.</p>
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">Responsibilities, skills, and practice questions for the {results.roleTitle} role.</p>
       </div>
 
-      <Card className="rounded-xl bg-white py-6 ring-border">
+      <Card className="rounded-2xl bg-white py-6 ring-border">
         <CardContent className="px-6 sm:px-7">
           <div className="flex items-start gap-4">
-            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/7 text-primary"><BriefcaseBusiness className="size-5" aria-hidden="true" /></span>
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary/7 text-primary"><BriefcaseBusiness className="size-5" aria-hidden="true" /></span>
             <div>
               <p className="eyebrow">Role overview</p>
               <h3 className="mt-2 text-xl font-semibold">{results.roleTitle}</h3>
@@ -48,11 +48,11 @@ export function InterviewPrepResults({ results, headingRef }: { results: Intervi
         <div className="mb-4 flex items-center gap-2"><ClipboardList className="size-4 text-primary" aria-hidden="true" /><h3 id="responsibilities-title" className="text-lg font-semibold">Top Responsibilities</h3></div>
         <div className="grid gap-3 sm:grid-cols-2">
           {results.responsibilities.map((item, index) => (
-            <Card key={item.responsibility} className="rounded-xl py-5 ring-border">
+            <Card key={item.responsibility} className="rounded-2xl py-5 ring-border">
               <CardContent className="px-5">
                 <p className="mb-3 text-xs font-semibold tabular-nums text-primary">{String(index + 1).padStart(2, '0')}</p>
                 <h4 className="text-sm font-medium leading-6">{item.responsibility}</h4>
-                <div className="mt-4 flex flex-wrap gap-2">{item.skills.map((skill) => <Badge key={skill} variant="outline" className="rounded-md bg-[#f7faf8] px-2 py-1 text-xs font-normal text-muted-foreground">{skill}</Badge>)}</div>
+                <div className="mt-4 flex flex-wrap gap-2">{item.skills.map((skill) => <Badge key={skill} variant="outline" className="rounded-full bg-[#f7faf8] px-2 py-1 text-xs font-normal text-muted-foreground">{skill}</Badge>)}</div>
               </CardContent>
             </Card>
           ))}
@@ -61,7 +61,7 @@ export function InterviewPrepResults({ results, headingRef }: { results: Intervi
 
       <section className="mt-10" aria-labelledby="skills-title">
         <div className="mb-4 flex items-center gap-2"><Check className="size-4 text-primary" aria-hidden="true" /><h3 id="skills-title" className="text-lg font-semibold">Key Skills</h3></div>
-        <div className="flex flex-wrap gap-2">{results.keySkills.map((skill) => <Badge key={skill} className="rounded-md bg-[#eaf2ed] px-3 py-1.5 text-xs font-medium text-primary hover:bg-[#eaf2ed]">{skill}</Badge>)}</div>
+        <div className="flex flex-wrap gap-2">{results.keySkills.map((skill) => <Badge key={skill} className="rounded-full bg-summary px-3 py-1.5 text-xs font-medium text-primary hover:bg-summary">{skill}</Badge>)}</div>
       </section>
 
       <section id="questions" className="mt-10 scroll-mt-8" aria-labelledby="questions-title">
@@ -76,18 +76,18 @@ export function InterviewPrepResults({ results, headingRef }: { results: Intervi
                 <h4 id={headingId} className="mb-3 text-sm font-semibold text-muted-foreground">{group.title}</h4>
                 <div className="grid gap-3">
                   {groupQuestions.map((item) => (
-                    <Card key={item.question} className="rounded-xl py-5 ring-border">
+                    <Card key={item.question} className="rounded-2xl py-5 ring-border">
                       <CardContent className="px-5 sm:px-6">
                         <div className="flex flex-wrap items-start justify-between gap-3">
-                          <p className="min-w-0 flex-1 text-base font-medium leading-7">{item.question}</p>
-                          <Badge variant="outline" className="rounded-md px-2 py-1 text-xs font-normal text-muted-foreground">{questionTypeLabels[item.type]}</Badge>
+                          <p className="min-w-0 basis-64 flex-1 text-base font-medium leading-7">{item.question}</p>
+                          <Badge variant="outline" className="rounded-full px-2 py-1 text-xs font-normal text-muted-foreground">{questionTypeLabels[item.type]}</Badge>
                         </div>
-                        <div className="mt-4 flex flex-wrap gap-2">{item.skills.map((skill) => <Badge key={skill} variant="outline" className="rounded-md px-2 py-1 text-xs font-normal text-muted-foreground">{skill}</Badge>)}</div>
+                        <div className="mt-4 flex flex-wrap gap-2">{item.skills.map((skill) => <Badge key={skill} variant="outline" className="rounded-full px-2 py-1 text-xs font-normal text-muted-foreground">{skill}</Badge>)}</div>
                         <div className="mt-5 grid gap-4 border-t pt-4 sm:grid-cols-2">
                           <div><p className="text-xs font-semibold text-foreground">Why this matters</p><p className="mt-1 text-sm leading-6 text-muted-foreground">{item.whyItMatters}</p></div>
                           <div><p className="text-xs font-semibold text-foreground">Responsibility behind this question</p><p className="mt-1 text-sm leading-6 text-muted-foreground">{item.basedOn}</p></div>
                         </div>
-                        <Button type="button" variant="outline" className="mt-5 h-9 px-4 text-primary" onClick={() => setPracticeQuestion(item)}>Practice This Question</Button>
+                        <Button type="button" variant="outline" className="mt-5 min-h-11 w-full px-4 text-primary sm:w-auto" onClick={() => setPracticeQuestion(item)}>Practice This Question</Button>
                       </CardContent>
                     </Card>
                   ))}
