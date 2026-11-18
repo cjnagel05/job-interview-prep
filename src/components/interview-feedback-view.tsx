@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import type { InterviewFeedback, StarAssessmentStatus } from '@/lib/interview-feedback-schema'
+import { Textarea } from '@/components/ui/textarea'
+import type { InterviewFeedback, StarAssessment, StarAssessmentStatus } from '@/lib/interview-feedback-schema'
 
 const scoreLabels = {
   relevance: 'Relevance',
@@ -19,8 +20,77 @@ const starLabels = {
 
 const starStyles: Record<StarAssessmentStatus, string> = {
   strong: 'border-primary/20 bg-primary/5 text-primary',
-  partial: 'border-amber-200 bg-amber-50 text-amber-900',
+  'needs-improvement': 'border-amber-200 bg-amber-50 text-amber-900',
   missing: 'border-amber-200 bg-amber-50 text-amber-900',
+}
+
+const starStatusLabels: Record<StarAssessmentStatus, string> = {
+  strong: 'Strong',
+  'needs-improvement': 'Needs improvement',
+  missing: 'Missing',
+}
+
+function initialRevisions(star: StarAssessment) {
+  return {
+    situation: star.situation.response ?? '',
+    task: star.task.response ?? '',
+    action: star.action.response ?? '',
+    result: star.result.response ?? '',
+  }
+}
+
+function StarWorksheet({ star }: { star: StarAssessment }) {
+  // Edits belong to this feedback only and disappear when practice resets.
+  const [draft, setDraft] = useState(() => ({ source: star, values: initialRevisions(star) }))
+  if (draft.source !== star) {
+    setDraft({ source: star, values: initialRevisions(star) })
+  }
+  const preview = Object.values(draft.values).map((value) => value.trim()).filter(Boolean).join('\n\n')
+
+  return (
+    <section className="overflow-hidden rounded-2xl border bg-white" aria-labelledby="star-title">
+      <div className="p-5">
+        <h4 id="star-title" className="text-sm font-semibold">STAR breakdown</h4>
+        <p className="mt-2 text-xs leading-5 text-muted-foreground">Review what you said and revise each part. Your edits stay here for this practice session only.</p>
+      </div>
+      <div className="hidden grid-cols-[0.7fr_1fr_1fr_1.2fr] border-t bg-summary text-xs font-semibold md:grid" aria-hidden="true">
+        {['STAR element', 'What you said', 'Feedback', 'Your revised version'].map((label) => <div key={label} className="p-3">{label}</div>)}
+      </div>
+      {Object.entries(starLabels).map(([key, label]) => {
+        const element = key as keyof StarAssessment
+        const component = star[element]
+        return (
+          <div key={key} role="group" aria-labelledby={`star-${key}`} className="grid min-w-0 border-t md:grid-cols-[0.7fr_1fr_1fr_1.2fr] md:divide-x">
+            <div className="min-w-0 bg-summary/50 p-3">
+              <h5 id={`star-${key}`} className="text-sm font-semibold">{label}</h5>
+              <span className={`mt-2 inline-block rounded-md border px-2 py-1 text-xs font-medium ${starStyles[component.status]}`}>{starStatusLabels[component.status]}</span>
+            </div>
+            <div className="min-w-0 p-3">
+              <p className="mb-1 text-xs font-semibold md:sr-only">What you said</p>
+              <p className="whitespace-pre-wrap break-words text-sm leading-6 text-muted-foreground">{component.response ?? 'Not clearly included in your response.'}</p>
+            </div>
+            <div className="min-w-0 p-3">
+              <p className="mb-1 text-xs font-semibold md:sr-only">Feedback</p>
+              <p className="whitespace-pre-wrap break-words text-sm leading-6 text-muted-foreground">{component.feedback}</p>
+            </div>
+            <div className="min-w-0 p-3">
+              <label htmlFor={`star-revised-${key}`} className="mb-2 block text-xs font-semibold md:sr-only">Your revised {label.toLowerCase()}</label>
+              <Textarea id={`star-revised-${key}`} value={draft.values[element]} rows={5}
+                placeholder={`Write your ${label.toLowerCase()} here...`}
+                onChange={(event) => {
+                  const value = event.target.value
+                  setDraft((current) => ({ ...current, values: { ...current.values, [element]: value } }))
+                }} className="min-h-32 resize-y bg-white" />
+            </div>
+          </div>
+        )
+      })}
+      <div className="border-t bg-summary/50 p-5">
+        <h5 className="text-sm font-semibold">Your Revised STAR Response</h5>
+        <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-7 text-muted-foreground">{preview || 'Write in the fields above to build your revised response.'}</p>
+      </div>
+    </section>
+  )
 }
 
 export function InterviewFeedbackView({ feedback, onPracticeAgain }: {
@@ -87,19 +157,7 @@ export function InterviewFeedbackView({ feedback, onPracticeAgain }: {
       </div>
 
       {feedback.star && (feedback.questionType === 'behavioral' || feedback.questionType === 'experience') && (
-        <section className="rounded-2xl border bg-white p-5" aria-labelledby="star-title">
-          <h4 id="star-title" className="text-sm font-semibold">STAR assessment</h4>
-          <p className="mt-2 text-xs leading-5 text-muted-foreground">How fully your answer explains the situation, task, action, and result.</p>
-          <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {Object.entries(starLabels).map(([key, label]) => {
-              const status = feedback.star![key as keyof typeof starLabels]
-              return <div key={key} className="rounded-lg border p-3">
-                <dt className="text-xs font-medium">{label}</dt>
-                <dd className={`mt-2 inline-block rounded-md border px-2 py-1 text-xs font-medium capitalize ${starStyles[status]}`}>{status}</dd>
-              </div>
-            })}
-          </dl>
-        </section>
+        <StarWorksheet star={feedback.star} />
       )}
 
       <section className="rounded-2xl border bg-white p-5" aria-labelledby="next-focus-title">

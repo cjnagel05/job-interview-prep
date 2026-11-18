@@ -14,12 +14,24 @@ export const interviewFeedbackScoresSchema = z.object({
   jobAlignment: score,
 })
 
-export const starAssessmentStatusSchema = z.enum(['strong', 'partial', 'missing'])
+export const starAssessmentStatusSchema = z.enum(['strong', 'needs-improvement', 'missing'])
+export const starComponentSchema = z.object({
+  response: feedbackText.nullable(),
+  status: starAssessmentStatusSchema,
+  feedback: feedbackText,
+}).superRefine((component, ctx) => {
+  if ((component.response === null) !== (component.status === 'missing')) {
+    ctx.addIssue({
+      code: 'custom', path: ['status'],
+      message: 'A missing component must have a null response; a present component must have text.',
+    })
+  }
+})
 export const starAssessmentSchema = z.object({
-  situation: starAssessmentStatusSchema,
-  task: starAssessmentStatusSchema,
-  action: starAssessmentStatusSchema,
-  result: starAssessmentStatusSchema,
+  situation: starComponentSchema,
+  task: starComponentSchema,
+  action: starComponentSchema,
+  result: starComponentSchema,
 })
 
 const feedbackFields = z.object({

@@ -19,14 +19,19 @@ const context = {
 }
 const feedback: InterviewPracticeFeedback = {
   questionType: 'behavioral',
-  transcript: 'I reviewed the intake process and created a checklist that reduced missed steps.',
+  transcript: 'The intake process was slow. I needed to reduce missed steps. I reviewed the intake process and created a checklist.',
   overallAssessment: 'minor-refinement',
   overallFeedback: 'You described your own actions clearly. Add a concrete outcome.',
   scores: { relevance: 4, specificity: 3, clarity: 4, jobAlignment: 4 },
   strengths: ['Identifies your own contribution.'],
   improvements: ['Explain what changed after introducing the checklist.'],
   nextAttemptFocus: 'Include one measure of the result.',
-  star: { situation: 'partial', task: 'partial', action: 'strong', result: 'missing' },
+  star: {
+    situation: { response: 'The intake process was slow.', status: 'strong', feedback: 'Clear context.' },
+    task: { response: 'I needed to reduce missed steps.', status: 'strong', feedback: 'Clear goal.' },
+    action: { response: 'I reviewed the intake process and created a checklist.', status: 'strong', feedback: 'Clear personal actions.' },
+    result: { response: null, status: 'missing', feedback: 'Describe what happened after the change.' },
+  },
 }
 
 function wav(size = 100): Buffer {
@@ -207,18 +212,199 @@ test('reviewer sends inline audio and context in exactly one Gemini request pres
   assert.equal(calls, 1)
 })
 
-test('technical output schema omits STAR and retains the question type', async () => {
+test('technical and role-specific schemas omit STAR and reject unsolicited STAR output', async () => {
   const { star: _star, ...withoutStar } = feedback
-  const review = createPracticeFeedbackReviewer(async (input) => {
-    const schema = input.response_format[0].schema as { properties: Record<string, unknown> }
-    assert.ok(!Object.hasOwn(schema.properties, 'star'))
-    return { status: 'completed', output_text: JSON.stringify({ ...withoutStar, questionType: 'technical' }) }
-  })
-  const result = await review({ ...context, questionType: 'technical', audio: wav(), mimeType: 'audio/wav' })
-  assert.equal(result.questionType, 'technical')
-  assert.equal(result.star, undefined)
-  assert.equal(interviewPracticeFeedbackSchema.safeParse(result).success, true)
+  for (const questionType of ['technical', 'role-specific'] as const) {
+    let calls = 0
+    const review = createPracticeFeedbackReviewer(async (input) => {
+      calls += 1
+      const schema = input.response_format[0].schema as { properties: Record<string, unknown> }
+      assert.ok(!Object.hasOwn(schema.properties, 'star'))
+      return { status: 'completed', output_text: JSON.stringify({ ...withoutStar, questionType }) }
+    })
+    const result = await review({ ...context, questionType, audio: wav(), mimeType: 'audio/wav' })
+    assert.equal(result.questionType, questionType)
+    assert.equal(result.star, undefined)
+    assert.equal(interviewPracticeFeedbackSchema.safeParse(result).success, true)
+    assert.equal(calls, 1)
+    const invalid = createPracticeFeedbackReviewer(async () => ({
+      status: 'completed', output_text: JSON.stringify({ ...feedback, questionType }),
+    }))
+    await assert.rejects(() => invalid({ ...context, questionType, audio: wav(), mimeType: 'audio/wav' }), PracticeFeedbackError)
+  }
 })
+
+test('both narrative types receive expanded STAR schema in the single evaluation call', async () => {
+  for (const questionType of ['behavioral', 'experience'] as const) {
+    let calls = 0
+    const review = createPracticeFeedbackReviewer(async (input) => {
+      calls += 1
+      assert.equal(input.model, 'gemini-3.5-flash-lite')
+      assert.equal(input.store, false)
+      assert.equal(input.generation_config.max_output_tokens, 6000)
+      const schema = input.response_format[0].schema as {
+        properties: { star: { properties: Record<string, { required: string[]; properties: Record<string, unknown> }> } }
+      }
+      for (const key of ['situation', 'task', 'action', 'result']) {
+        const component = schema.properties.star.properties[key]
+        assert.deepEqual(component.required, ['response', 'status', 'feedback'])
+        assert.ok(JSON.stringify(component.properties.response).includes('null'))
+        assert.ok(JSON.stringify(component.properties.status).includes('needs-improvement'))
+      }
+      for (const rule of ['Never add facts', 'Do not infer a result', 'must NOT be required or invented', 'Do NOT force criticism']) {
+        assert.ok(input.system_instruction.includes(rule))
+      }
+      return { status: 'completed', output_text: JSON.stringify({ ...feedback, questionType }) }
+    })
+    const response = await createPracticeFeedbackHandler(review)(request({ questionType }))
+    assert.equal(response.status, 200)
+    assert.deepEqual(await response.json(), { ...feedback, questionType })
+    assert.equal(calls, 1)
+  }
+})
+
+test('reviewer and endpoint reject malformed STAR and mismatched original question types', async () => {
+  for (const invalid of [
+    { ...feedback, star: { ...feedback.star, result: { response: null, status: 'strong', feedback: 'Clear.' } } },
+    { ...feedback, star: { ...feedback.star, result: { response: 'Invented result', status: 'missing', feedback: 'Absent.' } } },
+    { ...feedback, star: { ...feedback.star, action: { response: 'I made a checklist.', status: 'partial', feedback: 'Add detail.' } } },
+    { ...feedback, star: { ...feedback.star, task: { response: 'A goal', status: 'strong', feedback: '' } } },
+    { ...feedback, questionType: 'experience' },
+  ]) {
+    const review = createPracticeFeedbackReviewer(async () => ({ status: 'completed', output_text: JSON.stringify(invalid) }))
+    await assert.rejects(() => review({ ...context, audio: wav(), mimeType: 'audio/wav' }), PracticeFeedbackError)
+    const response = await createPracticeFeedbackHandler(async () => invalid as InterviewPracticeFeedback)(request())
+    assert.equal(response.status, 502)
+    assert.equal((await response.json()).category, 'temporary_service_issue')
+  }
+})
+
+// These mocks protect the rubric sent to Gemini and the validated return path.
+// They do not measure the live model's ability to grade a recording.
+const strongCalibrationStar = {
+  situation: {
+    response: 'The reporting dataset contained duplicate customer IDs and missing values in required fields.',
+    status: 'strong', feedback: 'The data-quality problem is clear.',
+  },
+  task: {
+    response: 'I was responsible for finding the cause and correcting the import before the reporting run.',
+    status: 'strong', feedback: 'Your responsibility and goal are clear.',
+  },
+  action: {
+    response: 'I compared the source records with the transformed dataset and traced the issue back to the source system. I corrected the import mapping and reran the required-field and duplicate checks.',
+    status: 'strong', feedback: 'Specific personal actions explain the investigation, fix, and checks.',
+  },
+  result: {
+    response: 'The checks found no duplicate IDs or missing required fields, and the reporting team accepted the corrected dataset.',
+    status: 'strong', feedback: 'The checks and acceptance clearly validate the outcome without needing metrics.',
+  },
+} satisfies NonNullable<InterviewPracticeFeedback['star']>
+
+const weakCalibrationTranscript = 'I noticed there were some problems with the data because some of the records did not look right. There were duplicates and some missing information. I talked with the team about the issue and made some changes to the data process. After that, I checked the data again and it seemed better. We were able to move forward with the reports.'
+
+const calibrationCases: {
+  name: string
+  star: NonNullable<InterviewPracticeFeedback['star']>
+  transcript?: string
+  strongOverall?: boolean
+  rules: string[]
+}[] = [
+  {
+    name: 'genuinely strong STAR content allows all four components to be strong',
+    star: strongCalibrationStar, strongOverall: true,
+    rules: ['If clearly present and effective for its purpose, use "strong"', 'A clear non-quantified result can be strong', 'Positive feedback alone is valid for strong components'],
+  },
+  {
+    name: 'weak data-quality example retains vague actions and outcomes without all-strong labels',
+    transcript: weakCalibrationTranscript,
+    star: {
+      situation: { response: 'There were duplicates and some missing information.', status: 'strong', feedback: 'The duplicates and missing information establish the problem.' },
+      task: { response: null, status: 'missing', feedback: 'Your personal responsibility was not clearly stated.' },
+      action: { response: 'I talked with the team about the issue and made some changes to the data process. After that, I checked the data again.', status: 'needs-improvement', feedback: 'Explain the specific changes you personally made and the checks you performed.' },
+      result: { response: 'It seemed better. We were able to move forward with the reports.', status: 'needs-improvement', feedback: 'Explain what the checks showed or how the fix was validated.' },
+    },
+    rules: ['Do not mark all four components strong', 'Do not invent ownership from noticing the problem or taking action', 'Keep the stated outcome in response, rather than returning null'],
+  },
+  {
+    name: 'strong informal content permits optional polish without downgrading status or overall assessment',
+    strongOverall: true,
+    star: { ...strongCalibrationStar, action: {
+      response: 'I tracked down the duplicate IDs by comparing the source and transformed records. I corrected the import mapping and reran the required-field and duplicate checks.',
+      status: 'strong', feedback: 'Your investigation and fix are specific. Optional wording polish: use "traced" instead of "tracked down".',
+    } },
+    rules: ['Optional wording polish must neither downgrade strong content nor upgrade vague content', 'must be clearly optional and must not create an overall improvement, nextAttemptFocus, or lower overallAssessment by itself'],
+  },
+  {
+    name: 'missing Result stays null and missing without inferring success from the fix',
+    star: { ...strongCalibrationStar, result: { response: null, status: 'missing', feedback: 'Describe what happened after your changes; no outcome was stated.' } },
+    rules: ['Do not infer a result just because an action probably had a positive outcome', 'No stated outcome means missing, not needs-improvement'],
+  },
+  {
+    name: 'vague Task is present but needs improvement rather than strong or missing',
+    star: { ...strongCalibrationStar, task: { response: 'I needed to help with the issue.', status: 'needs-improvement', feedback: 'Clarify your responsibility or goal in resolving the issue.' } },
+    rules: ['A general problem statement alone is not a Task', '"I needed to help with the issue" is present but needs improvement'],
+  },
+  {
+    name: 'vague Action is present but needs improvement rather than strong or missing',
+    star: { ...strongCalibrationStar, action: { response: 'I talked with the team and made some changes.', status: 'needs-improvement', feedback: 'Name the specific changes you personally made.' } },
+    rules: ['"I made some changes" is present but needs improvement', '"I did some things to fix it" is substantively vague and needs improvement, not just wording polish'],
+  },
+  {
+    name: 'vague Result is present but needs improvement rather than strong or missing',
+    star: { ...strongCalibrationStar, result: { response: 'It seemed better afterward.', status: 'needs-improvement', feedback: 'Describe what changed or how you validated the outcome.' } },
+    rules: ['"It worked", "it seemed better", or "we moved forward" generally needs improvement unless supported by a meaningful outcome'],
+  },
+]
+
+for (const scenario of calibrationCases) {
+  test(`STAR calibration: ${scenario.name}`, async () => {
+    const expected: InterviewPracticeFeedback = {
+      ...feedback, star: scenario.star,
+      transcript: scenario.transcript ?? Object.values(scenario.star).map((component) => component.response).filter(Boolean).join(' '),
+      ...(scenario.strongOverall ? {
+        overallAssessment: 'strong-as-is', improvements: [], nextAttemptFocus: null,
+        overallFeedback: 'Your answer clearly establishes your responsibility, specific actions, and a validated outcome.',
+        scores: { relevance: 5, specificity: 5, clarity: 5, jobAlignment: 5 },
+      } : {
+        overallAssessment: 'needs-improvement',
+        overallFeedback: 'Some components need clearer substantive evidence.',
+        improvements: ['Clarify the components identified in the STAR feedback.'],
+        nextAttemptFocus: 'Address the missing or vague content identified in the STAR feedback.',
+      }),
+    }
+    let calls = 0
+    const review = createPracticeFeedbackReviewer(async (input) => {
+      calls += 1
+      assert.equal(input.model, 'gemini-3.5-flash-lite')
+      assert.equal(input.store, false)
+      const prompt = input.system_instruction.replace(/\s+/g, ' ')
+      const steps = [
+        '1. Is the component actually present?',
+        '2. If present, does it clearly fulfill the purpose of that STAR element?',
+        '3. If clearly present and effective for its purpose, use "strong"',
+        '4. Only after determining status, consider OPTIONAL wording polish.',
+      ]
+      let previous = -1
+      for (const step of steps) {
+        const position = prompt.indexOf(step)
+        assert.ok(position > previous, `Missing or out-of-order rubric step: ${step}`)
+        previous = position
+      }
+      for (const rule of scenario.rules) assert.ok(prompt.includes(rule), `Missing calibration rule: ${rule}`)
+      assert.ok(prompt.includes(weakCalibrationTranscript), 'Keep the weak example in the actual prompt')
+      assert.ok(prompt.includes('Understandable alone is not enough'))
+      assert.ok(!prompt.includes('because the scenario is understandable'))
+      assert.ok(!prompt.includes('informal, vague, awkward, or imprecise wording'))
+      return { status: 'completed', output_text: JSON.stringify(expected) }
+    })
+    const response = await createPracticeFeedbackHandler(review)(request({
+      question: 'Tell me about a time you resolved a data quality issue. What was your responsibility, what did you do, and what happened?',
+    }))
+    assert.equal(response.status, 200)
+    assert.deepEqual(await response.json(), expected)
+    assert.equal(calls, 1)
+  })
+}
 
 test('Agile experience calibration forbids optional enrichment and preserves strong-as-is through reviewer and endpoint', async () => {
   const agileContext = {

@@ -16,7 +16,12 @@ const samples = {
       'Describe a measurable result beyond meeting the deadline.',
     ],
     nextAttemptFocus: 'End your next answer with one concrete outcome and explain how your action contributed to it.',
-    star: { situation: 'strong', task: 'strong', action: 'partial', result: 'partial' },
+    star: {
+      situation: { response: 'During a busy project, our team disagreed about priorities.', status: 'strong', feedback: 'Clear and concise context for the disagreement.' },
+      task: { response: 'I was responsible for helping us agree on a plan.', status: 'strong', feedback: 'Your responsibility is clear.' },
+      action: { response: 'I asked each person to explain their concerns, compared the options against our deadline, and proposed a smaller first release.', status: 'needs-improvement', feedback: 'Explain which trade-off led you to propose the smaller release.' },
+      result: { response: 'We agreed on the plan and delivered it on time.', status: 'strong', feedback: 'You state a concrete outcome: agreement and on-time delivery.' },
+    },
   },
   experience: {
     questionType: 'experience',
@@ -33,7 +38,12 @@ const samples = {
       'Include the before-and-after turnaround time if you know it.',
     ],
     nextAttemptFocus: 'Include one before-and-after measure to show the impact of your experience.',
-    star: { situation: 'strong', task: 'strong', action: 'strong', result: 'partial' },
+    star: {
+      situation: { response: 'In my last role, I led a project to improve a slow internal process.', status: 'strong', feedback: 'The process problem is clear.' },
+      task: { response: 'My goal was to reduce the time our team spent on repeated requests.', status: 'strong', feedback: 'You identify your goal clearly.' },
+      action: { response: 'I reviewed the workflow, spoke with the people using it, and created a simpler intake checklist.', status: 'strong', feedback: 'Specific steps show your personal contribution.' },
+      result: { response: 'The team adopted the checklist, and requests became easier to handle.', status: 'needs-improvement', feedback: 'Explain what easier to handle meant in practice, using an observed example or a measure if available.' },
+    },
   },
   technical: {
     questionType: 'technical',
